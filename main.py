@@ -18,6 +18,9 @@ BASE_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.pn
 BG_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bg.png")))
 
 STAT_FONT= pygame.font.SysFont("comicsans",50)
+GAME_OVER= pygame.font.SysFont("comicsans",200)
+
+SINGLE_PLAYER=True
 
 class Bird:
     IMGS= BIRD_IMGS
@@ -84,7 +87,7 @@ class Bird:
         return pygame.mask.from_surface(self.img)
 
 class Pipe:
-    GAP= 200
+    GAP= 180
     VEL= 5
 
     def __init__(self,x):
@@ -123,6 +126,7 @@ class Pipe:
         top_collide= bird_mask.overlap(top_mask, top_offset)
 
         if(bottom_collide or top_collide):
+            print("Collide ")
             return True
 
         return False
@@ -174,19 +178,24 @@ def main():
 
     clock= pygame.time.Clock()
     run=True
+
     while run:
         clock.tick(30)
+
         for event in pygame.event.get():
             if event.type== pygame.QUIT:
                 run=False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bird.jump()
 
-        #bird.move()
+        bird.move()
         add_pipe= False
         rem_pipe= False
         rem=[]
         for pipe in pipes:
             if pipe.collide(bird):
-                pass
+                run=False
 
             if pipe.x + pipe.PIPE_TOP.get_width()<0:
                 rem.append(pipe)
@@ -204,14 +213,33 @@ def main():
             pipes.append(Pipe(600))
         if rem_pipe:
             pipes.pop(0)
-        if bird.y+ bird.img.get_height()>=730:
-            pass
+        if bird.y+ bird.img.get_height()>=730: #Bird hits the ground
+
+            run=False
 
         base.move()
         draw_window(win, bird, pipes, base,score)
+
+
     pygame.quit()
     quit()
+
+def run(config_path):
+    config_path= neat.config.Config(neat.DefaultGenome,neat.DefaultReproduction,
+                                    neat.DefaultSpeciesSet,neat.DefaultStagnation,config_path)
+    population= neat.Population(config_path)
+    population.add_reporter(neat.StdOutReporter(True))
+    stats= neat.StatisticsReporter()
+    population.add_reporter(stats)
+
+    winner= population.run(main(),50)
+
 if __name__ == '__main__':
+    '''
+    local_dir= os.path.dirname(os.path.join(__file__))
+    config_path= os.path.join(local_dir, "config.txt")
+    run()
+    '''
     main()
 
 
